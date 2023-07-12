@@ -32,11 +32,7 @@ jobs:
         run: dotnet test ./Basecode.sln --verbosity normal
 
       - name: Configure DI container
-        run: |
-          echo "::set-env name=EmailServiceType::Basecode.Services.Services.EmailService"
-          echo "::set-env name=EmailServiceAssembly::Basecode.Services"
-          echo "::set-env name=EmailServiceNamespace::Basecode.Services.Services"
-          echo "::set-env name=EmailServiceInterface::Basecode.Services.Interfaces.IEmailService"
+        run: echo "Environment file is loaded"
 
       - name: Update ApplicationService DI configuration
         run: |
