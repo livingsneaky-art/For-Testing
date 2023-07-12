@@ -18,5 +18,10 @@ namespace Basecode.Data.Interfaces
         /// <param name="id">The ID of the application to retrieve.</param>
         /// <returns>The application with the specified ID, or null if not found.</returns>
         Application GetById(Guid id);
+
+        // Add the missing method declarations
+        Application CreateApplication(Application application);
+        bool CheckApplication(Guid applicationId);
+        void UpdateApplication(Application application);
     }
 }
