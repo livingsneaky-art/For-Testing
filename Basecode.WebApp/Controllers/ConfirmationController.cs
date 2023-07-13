@@ -132,6 +132,7 @@ namespace Basecode.WebApp.Controllers
                 _logger.Error(ErrorHandling.DefaultException(e.Message));
                 return StatusCode(500, "Something went wrong.");
             }
+
         }
     }
 }
