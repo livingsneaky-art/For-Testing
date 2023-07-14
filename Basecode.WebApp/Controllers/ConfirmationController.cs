@@ -1,5 +1,4 @@
-﻿using Basecode.Data.Models;
-using Basecode.Data.ViewModels;
+﻿using Basecode.Data.ViewModels;
 using Basecode.Services.Interfaces;
 using Basecode.Services.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -13,36 +12,41 @@ namespace Basecode.WebApp.Controllers
         private readonly IApplicantService _applicantService;
         private readonly ICharacterReferenceService _characterReferenceService;
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
+        private readonly IApplicationService _applicationService;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ConfirmationController"/> class.
         /// </summary>
         /// <param name="applicantService">The applicant service.</param>
         /// <param name="characterReferenceService">The character reference service.</param>
-        public ConfirmationController(IApplicantService applicantService, ICharacterReferenceService characterReferenceService)
+        public ConfirmationController(IApplicantService applicantService, ICharacterReferenceService characterReferenceService, IApplicationService applicationService)
         {
             _applicantService = applicantService;
             _characterReferenceService = characterReferenceService;
+            _applicationService = applicationService;
         }
 
+
         /// <summary>
-        /// Displays the confirmation page with the applicant and character reference data.
+        /// Renders the confirmation view with the submitted data.
         /// </summary>
-        /// <param name="firstName">The first name of the applicant.</param>
-        /// <param name="middleName">The middle name of the applicant.</param>
-        /// <param name="lastName">The last name of the applicant.</param>
-        /// <param name="birthdate">The birthdate of the applicant.</param>
-        /// <param name="age">The age of the applicant.</param>
-        /// <param name="gender">The gender of the applicant.</param>
-        /// <param name="nationality">The nationality of the applicant.</param>
-        /// <param name="street">The street address of the applicant.</param>
-        /// <param name="city">The city of the applicant.</param>
-        /// <param name="province">The province of the applicant.</param>
-        /// <param name="zip">The zip code of the applicant.</param>
-        /// <param name="phone">The phone number of the applicant.</param>
-        /// <param name="email">The email address of the applicant.</param>
-        /// <param name="references">The list of character references.</param>
-        /// <returns>The view result.</returns>
+        /// <param name="firstName"></param>
+        /// <param name="middleName"></param>
+        /// <param name="lastName"></param>
+        /// <param name="birthdate"></param>
+        /// <param name="age"></param>
+        /// <param name="gender"></param>
+        /// <param name="nationality"></param>
+        /// <param name="street"></param>
+        /// <param name="city"></param>
+        /// <param name="province"></param>
+        /// <param name="zip"></param>
+        /// <param name="phone"></param>
+        /// <param name="email"></param>
+        /// <param name="fileName"></param>
+        /// <param name="fileData"></param>
+        /// <param name="references"></param>
+        /// <returns>The view to be rendered.</returns>
         [HttpPost]
         public IActionResult Index(string firstName,
                             string middleName,
@@ -57,8 +61,12 @@ namespace Basecode.WebApp.Controllers
                             string zip,
                             string phone,
                             string email,
+                            string fileName,
+                            byte[] fileData,
                             List<CharacterReferenceViewModel> references)
         {
+            string referencesJson = JsonConvert.SerializeObject(references);
+
             TempData["First Name"] = firstName;
             TempData["Middle Name"] = middleName;
             TempData["Last Name"] = lastName;
@@ -72,20 +80,25 @@ namespace Basecode.WebApp.Controllers
             TempData["Zip"] = zip;
             TempData["Phone"] = phone;
             TempData["Email"] = email;
-            string referencesJson = JsonConvert.SerializeObject(references);
+            TempData["FileData"] = fileData;
+            TempData["FileName"] = fileName;
             TempData["ReferencesJson"] = referencesJson;
+
             return View();
         }
 
         /// <summary>
-        /// Creates the applicant and character references based on the submitted data.
+        /// Creates a new applicant and character references, updates the application status, and sends email notifications.
         /// </summary>
-        /// <param name="applicant">The ApplicantViewModel object containing the applicant data.</param>
-        /// <param name="references">The list of CharacterReferenceViewModel objects containing the character reference data.</param>
-        /// <returns>The action result.</returns>
+        /// <param name="applicant">The applicant's information.</param>
+        /// <param name="references">A list of character references.</param>
+        /// <param name="applicantId">The ID of the applicant.</param>
+        /// <param name="newStatus">The new status to update.</param>
+        /// <returns>An asynchronous action result.</returns>
         [HttpPost]
-        public IActionResult Create(ApplicantViewModel applicant, List<CharacterReferenceViewModel> references)
+        public async Task<IActionResult> Create(ApplicantViewModel applicant, List<CharacterReferenceViewModel> references, int applicantId, string newStatus)
         {
+            newStatus = "Success";
             try
             {
                 var (data, createdApplicantId) = _applicantService.Create(applicant);
@@ -107,6 +120,9 @@ namespace Basecode.WebApp.Controllers
                             _logger.Trace(ErrorHandling.SetLog(logContent));
                         }
                     }
+                    // Send email notifications
+                    await _applicationService.UpdateApplicationStatus(createdApplicantId, newStatus);
+
                     return RedirectToAction("Index", "Job");
                 }
                 _logger.Trace(ErrorHandling.SetLog(data));
@@ -117,6 +133,8 @@ namespace Basecode.WebApp.Controllers
                 _logger.Error(ErrorHandling.DefaultException(e.Message));
                 return StatusCode(500, "Something went wrong.");
             }
+
+
         }
     }
 }
